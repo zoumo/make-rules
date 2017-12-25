@@ -16,7 +16,6 @@ PRJ_CMDPATH="${PRJ_ROOT}/cmd"
 PRJ_OUTPUT_BINPATH="${PRJ_ROOT}/bin"
 
 GO_ONBUILD_IMAGE="${GO_ONBUILD_IMAGE:-golang:1.9.2-alpine3.6}"
-COLOR_LOG=true
 
 source "${MAKE_RULES_ROOT}/lib/util.sh"
 source "${MAKE_RULES_ROOT}/lib/logging.sh"

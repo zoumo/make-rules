@@ -3,7 +3,10 @@
 # Controls verbosity of the script output and logging.
 VERBOSE="${VERBOSE:-5}"
 
-if [[ -n ${COLOR_LOG-} ]]; then
+# If set true, the log will be colorized
+readonly COLOR_LOG=${COLOR_LOG:-true}
+
+if [[ ${COLOR_LOG} == "true" ]]; then
 	readonly blue="\033[34m"
 	readonly green="\033[32m"
 	readonly red="\033[31m"
