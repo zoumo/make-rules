@@ -31,7 +31,7 @@ docker::names_from_targets() {
 	local target
 	for target; do
 		# get base name of target
-		echo "${DOCKER_IMAGE_PREFIX}${target##*/}${DOCKER_IMAGE_SUFFIX}"
+		echo "${DOCKER_IMAGE_PREFIX}${target##*/}${DOCKER_IMAGE_SUFFIX}" | tr -d " "
 	done
 }
 
