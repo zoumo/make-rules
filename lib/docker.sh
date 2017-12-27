@@ -74,6 +74,8 @@ docker::build_images() {
 				docker tag "${name}:${tag}" "${registry}/${name}:${tag}"
 			done
 
+			# untag temporary docker image
+			docker rmi "${name}:${tag}"
 		done
 	)
 }
