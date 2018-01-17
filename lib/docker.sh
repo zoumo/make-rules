@@ -21,7 +21,7 @@ readonly DOCKER_IMAGE_PREFIX=${DOCKER_IMAGE_PREFIX:-}
 readonly DOCKER_IMAGE_SUFFIX=${DOCKER_IMAGE_SUFFIX:-}
 
 # If not true, scripts will check whether image exists in remote registry.
-readonly DOCKER_FORCE_PUSH=${DOCKER_FORCE_PUSH:-true}
+readonly DOCKER_FORCE_PUSH=${DOCKER_FORCE_PUSH:-false}
 
 # =========================================================
 # functions
