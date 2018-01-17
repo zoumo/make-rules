@@ -57,6 +57,15 @@ readonly GO_ALL_BUILD_BINARIES=(
 	"${GO_ALL_BUILD_TARGETS[@]##*/}"
 )
 
+# the following directories will not be tested
+readonly GO_NOTEST=(
+	vendor
+	test
+	tests
+	scripts
+	hack
+)
+
 # =========================================================
 # functions
 # =========================================================
@@ -562,8 +571,8 @@ golang::unittest() {
 		goflags+=(${flags[@]-})
 
 		local -a targets=($(go list ./...))
-		local -a exceptions=(vendor test tests scripts hack)
-		exceptions+=(${GO_TEST_EXCEPTIONS-})
+		local -a exceptions=(${GO_NOTEST[@]-})
+		exceptions+=(${GO_TEST_EXCEPTIONS[@]-})
 
 		# NOTE: Using "${array[*]}" here is correct.  [@] becomes distinct words (in
 		# bash parlance).
@@ -574,7 +583,7 @@ golang::unittest() {
 		local binaries
 		binaries=($(golang::binaries_from_targets "${targets[@]}"))
 
-		local -a platforms=(${GO_BUILD_PLATFORMS:-})
+		local -a platforms=(${GO_BUILD_PLATFORMS[@]-})
 		if [[ ${#platforms[@]} -eq 0 ]]; then
 			platforms=("${host_platform}")
 		fi
