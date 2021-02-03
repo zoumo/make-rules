@@ -1,0 +1,6 @@
+{
+    "go.toolsEnvVars": {
+        "GOIMPORTSTYLE": "auto",
+        "GOIMPORTLOCAL": "github.com/zoumo/make-rules"
+    },
+}
