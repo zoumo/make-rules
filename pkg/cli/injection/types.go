@@ -2,8 +2,12 @@ package injection
 
 import "github.com/go-logr/logr"
 
-// RequiresValidation is a subcommand that requires injection
-type RequiresInjection interface {
+// RequiresValidation indicate the subcommand requires a logger
+type RequiresLogger interface {
 	InjectLogger(obj logr.Logger)
+}
+
+// RequiresValidation indicate the subcommand requires workspace
+type RequiresWorkspace interface {
 	InjectWorkspace(ws string)
 }

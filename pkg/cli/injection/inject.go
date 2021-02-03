@@ -11,7 +11,7 @@ import (
 
 func InjectLogger(logger logr.Logger) plugin.InitHook {
 	return func(cmd *cobra.Command, sub plugin.Subcommand) error {
-		if injection, ok := sub.(RequiresInjection); ok {
+		if injection, ok := sub.(RequiresLogger); ok {
 			injection.InjectLogger(logger)
 		}
 		return nil
@@ -24,7 +24,7 @@ func InjectWorkspace() plugin.InitHook {
 		if err != nil {
 			return err
 		}
-		if injection, ok := sub.(RequiresInjection); ok {
+		if injection, ok := sub.(RequiresWorkspace); ok {
 			injection.InjectWorkspace(ws)
 		}
 		return nil
