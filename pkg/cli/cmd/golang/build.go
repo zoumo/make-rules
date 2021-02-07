@@ -192,6 +192,8 @@ func (c *gobuildSubcommand) ldflags() string {
 		fmt.Sprintf("-X github.com/zoumo/make-rules/version.gitTreeState=%s", info.GitTreeState),
 	}
 
+	flags = append(flags, c.Config.Go.Build.LDFlags...)
+
 	return strings.Join(flags, " ")
 }
 
@@ -247,7 +249,6 @@ func (c *gobuildSubcommand) PostRun(args []string) error {
 }
 
 func (c *gobuildSubcommand) Run(args []string) error {
-	ldflags := c.ldflags()
 	for _, platform := range c.platforms {
 		c.Logger.Info("=================================================")
 		c.Logger.Info("Go cross compiling for target platform", "platform", platform.String())
@@ -269,9 +270,10 @@ func (c *gobuildSubcommand) Run(args []string) error {
 			for k, v := range cmd.FilterEnv(RequiredGoEnvKeys) {
 				c.Logger.V(2).Info("Go env", k, v)
 			}
-			c.Logger.V(2).Info("Go opt", "ldflags", ldflags)
 			// go build
-			out, err := cmd.RunCombinedOutput("build", "-i", "-o", output, "-ldflags", ldflags, target)
+			args := c.gobuildArgs(output, target)
+			c.Logger.V(2).Info("Go build args", "args", args)
+			out, err := cmd.RunCombinedOutput(args...)
 			if err != nil {
 				c.Logger.Error(err, string(out))
 				return err
@@ -285,6 +287,19 @@ func (c *gobuildSubcommand) Run(args []string) error {
 		c.Logger.Info("-------------------------------------------------")
 	}
 	return nil
+}
+
+func (c gobuildSubcommand) gobuildArgs(output, target string) []string {
+	args := []string{"build", "-i"}
+	if len(c.Config.Go.Build.Flags) > 0 {
+		args = append(args, c.Config.Go.Build.Flags...)
+	}
+	args = append(args, "-ldflags", c.ldflags())
+	if len(c.Config.Go.Build.GCFlags) > 0 {
+		args = append(args, "-gcflags", strings.Join(c.Config.Go.Build.GCFlags, " "))
+	}
+	args = append(args, "-o", output, target)
+	return args
 }
 
 func (c *gobuildSubcommand) outputFile(platform platform, target string) string {

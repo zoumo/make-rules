@@ -16,12 +16,20 @@ type Go struct {
 	Build  GoBuild  `json:"build,omitempty"`
 	Mod    GoMod    `json:"mod,omitempty"`
 	Format GoFormat `json:"format,omitempty"`
+	Test   GoTest   `json:"test,omitempty"`
+}
+
+type GoTest struct {
+	Exclude []string `json:"exceptions,omitempty"`
 }
 
 type GoBuild struct {
 	Platforms      []string `json:"platforms,omitempty"`
 	OnBuildImage   string   `json:"onBuildImage,omitempty"`
 	GlobalHooksDir string   `json:"globalHooksDir,omitempty"`
+	Flags          []string `json:"flags,omitempty"`
+	LDFlags        []string `json:"ldflags,omitempty"`
+	GCFlags        []string `json:"gcflags,omitempty"`
 }
 
 type GoMod struct {

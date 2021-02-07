@@ -21,6 +21,7 @@ func newGoCommand(cfg *config.Config) *cobra.Command {
 		Short:        "Used to build go module and operate go.mod",
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			gologger.V(1).Info("make-rules config", "config", cfg)
 			if err := goutil.VerifyGoVersion(); err != nil {
 				return err
 			}
@@ -30,6 +31,7 @@ func newGoCommand(cfg *config.Config) *cobra.Command {
 	cmd.AddCommand(newGoBuildCommand(cfg))
 	cmd.AddCommand(newGoModCommand(cfg))
 	cmd.AddCommand(newGoFormatCommand(cfg))
+	cmd.AddCommand(newGoUnittestCommand(cfg))
 
 	return cmd
 }
@@ -77,4 +79,13 @@ func newGoModCommand(cfg *config.Config) *cobra.Command {
 		injection.InjectConfig(cfg),
 	))
 	return cmd
+}
+
+func newGoUnittestCommand(cfg *config.Config) *cobra.Command {
+	return plugin.NewCobraSubcommandOrDie(
+		golang.NewGoUnittestCommand(),
+		injection.InjectLogger(gologger.WithName("unittest")),
+		injection.InjectWorkspace(),
+		injection.InjectConfig(cfg),
+	)
 }

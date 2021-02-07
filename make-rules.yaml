@@ -1,6 +1,11 @@
 version: 1
 go:
+  test:
+    exclude:
+      - testdata
   build:
+    flags:
+      - "-v"
     platforms:
       - linux/amd64
       - darwin/amd64
