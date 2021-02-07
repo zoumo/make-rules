@@ -1,0 +1,30 @@
+version: 1
+go:
+  build:
+    platforms:
+      - linux/amd64
+      - darwin/amd64
+    globalHooksDir: hack/hooks
+  mod:
+    require:
+      - path: github.com/go-logr/logr
+        version: 8fc6c73
+        skipDeps: true
+    replace:
+      - path: k8s.io/klog/v2
+        version: v2.2.0
+  format:
+    local: github.com/zoumo/make-rules
+    exclude:
+      dirs:
+        - "output"
+        - "hack/"
+      files:
+       - "datafile.go"
+       - "bindata.go"
+       - ".*_skip_format"
+container:
+  imagePrefix: "prefix_"
+  imageSuffix: "_suffix"
+  registries:
+    - hub.docker.io/zoumo

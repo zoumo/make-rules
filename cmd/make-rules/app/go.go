@@ -6,6 +6,7 @@ import (
 	"github.com/zoumo/make-rules/pkg/cli/cmd/golang"
 	"github.com/zoumo/make-rules/pkg/cli/injection"
 	"github.com/zoumo/make-rules/pkg/cli/plugin"
+	"github.com/zoumo/make-rules/pkg/config"
 	goutil "github.com/zoumo/make-rules/pkg/golang"
 	"github.com/zoumo/make-rules/pkg/log"
 )
@@ -14,7 +15,7 @@ var (
 	gologger = log.Log.WithName("go")
 )
 
-func newGoCommand() *cobra.Command {
+func newGoCommand(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "go",
 		Short:        "Used to build go module and operate go.mod",
@@ -26,34 +27,54 @@ func newGoCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.AddCommand(newGoBuildCommand())
-	cmd.AddCommand(newGoModCommand())
+	cmd.AddCommand(newGoBuildCommand(cfg))
+	cmd.AddCommand(newGoModCommand(cfg))
+	cmd.AddCommand(newGoFormatCommand(cfg))
 
 	return cmd
 }
 
-func newGoBuildCommand() *cobra.Command {
+func newGoBuildCommand(cfg *config.Config) *cobra.Command {
 	return plugin.NewCobraSubcommandOrDie(
 		golang.NewGobuildCommand(),
 		injection.InjectLogger(gologger.WithName("build")),
 		injection.InjectWorkspace(),
+		injection.InjectConfig(cfg),
 	)
 }
 
-func newGoModCommand() *cobra.Command {
+func newGoFormatCommand(cfg *config.Config) *cobra.Command {
+	return plugin.NewCobraSubcommandOrDie(
+		golang.NewFormatSubcommand(),
+		injection.InjectLogger(gologger.WithName("format")),
+		injection.InjectWorkspace(),
+		injection.InjectConfig(cfg),
+	)
+}
+
+func newGoModCommand(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "mod",
 		SilenceUsage: true,
 	}
+	logger := gologger.WithName("mod")
 	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
 		golang.NewModTidyCommand(),
-		injection.InjectLogger(gologger.WithName("mod")),
+		injection.InjectLogger(logger),
 		injection.InjectWorkspace(),
+		injection.InjectConfig(cfg),
 	))
 	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
 		golang.NewModRequireCommand(),
-		injection.InjectLogger(gologger.WithName("mod")),
+		injection.InjectLogger(logger),
 		injection.InjectWorkspace(),
+		injection.InjectConfig(cfg),
+	))
+	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
+		golang.NewModUpdateCommand(),
+		injection.InjectLogger(logger),
+		injection.InjectWorkspace(),
+		injection.InjectConfig(cfg),
 	))
 	return cmd
 }

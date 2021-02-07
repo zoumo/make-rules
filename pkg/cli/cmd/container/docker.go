@@ -18,7 +18,6 @@ type dockerBuildSubcommand struct {
 
 	dockerRunner *runner.Runner
 
-	registries []string
 	allTargets []string
 	targets    []string
 	git        *git.Repository
@@ -27,7 +26,7 @@ type dockerBuildSubcommand struct {
 
 func NewContainerBuildCommand() plugin.Subcommand {
 	return &dockerBuildSubcommand{
-		InjectionMixin: &injection.InjectionMixin{},
+		InjectionMixin: injection.NewInjectionMixin(),
 		dockerRunner:   runner.NewRunner("docker"),
 	}
 }
@@ -37,22 +36,19 @@ func (c *dockerBuildSubcommand) Name() string {
 }
 
 func (c *dockerBuildSubcommand) BindFlags(fs *pflag.FlagSet) {
-	fs.StringSliceVar(&c.registries, "registries", c.registries, "docker image registries")
+	fs.StringSliceVar(&c.Config.Container.Registries, "registries", c.Config.Container.Registries, "docker image registries")
 	fs.StringVar(&c.version, "version", c.version, "go build target version")
 }
 
 func (c *dockerBuildSubcommand) PreRun(args []string) error {
 	// no targets, walk cmd/ dir to find targets
+	c.Config.SetDefaults()
 	allTargets, err := utils.FindTargetsFrom(c.Workspace, "build", "Dockerfile")
 	if err != nil {
 		return err
 	}
 	c.allTargets = allTargets
 	c.targets = utils.FilterTargets(args, c.allTargets, "build")
-	for i := range c.targets {
-		// nomalize target path
-		c.targets[i] = path.Join(c.Workspace, c.targets[i])
-	}
 
 	r, err := git.Open(c.Workspace)
 	if err != nil {
@@ -99,8 +95,8 @@ func (c *dockerBuildSubcommand) Run(args []string) error {
 	c.Logger.Info("=================================================")
 	c.Logger.Info("Docker build", "targets", c.targets)
 	for _, target := range c.targets {
-		dockerfile := path.Join(target, "Dockerfile")
-		tag := fmt.Sprintf("%s:%s", path.Base(target), c.getDockerTag())
+		dockerfile := path.Join(c.Workspace, target, "Dockerfile")
+		tag := fmt.Sprintf("%s%s%s:%s", c.Config.Container.ImagePrefix, path.Base(target), c.Config.Container.ImageSuffix, c.getDockerTag())
 		c.Logger.Info("-------------------------------------------------")
 		c.Logger.Info("Docker build", "dockerfile", dockerfile, "tag", tag)
 
@@ -109,12 +105,12 @@ func (c *dockerBuildSubcommand) Run(args []string) error {
 			c.Logger.Error(err, "failed to build image", "output", string(out))
 			return err
 		}
-		if len(c.registries) == 0 {
+		if len(c.Config.Container.Registries) == 0 {
 			continue
 		}
-		for _, r := range c.registries {
+		for _, r := range c.Config.Container.Registries {
 			// new tag
-			newTag := fmt.Sprintf("%s/%s", r, tag)
+			newTag := path.Join(r, tag)
 			c.Logger.Info("Docker tag", "from", tag, "to", newTag)
 			out, err = c.dockerRunner.RunCombinedOutput("tag", tag, newTag)
 			if err != nil {

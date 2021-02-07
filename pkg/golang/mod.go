@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/zoumo/goset"
 
 	"github.com/zoumo/make-rules/pkg/runner"
 )
@@ -39,7 +38,8 @@ func NewGomodHelper(modfile string, logger logr.Logger) *GomodHelper {
 	return g
 }
 
-func (g *GomodHelper) Require(path, version string) error {
+func (g *GomodHelper) Require(path, version string, skipDeps bool) error {
+	g.logger.Info("mod require", "path", path, "version", version, "skip-deps", skipDeps)
 	mod, err := g.ModDownload(path, version)
 	if err != nil {
 		return err
@@ -53,7 +53,13 @@ func (g *GomodHelper) Require(path, version string) error {
 
 	g.logger.Info("download go.mod", "filepath", modfile)
 
+	// replace version with mod version
+	version = mod.Version
+
 	newgomod := NewGomodHelper(modfile, g.logger)
+
+	// kubernetes imports module in its staging path
+	// we must replace these module firstly to avoid error occurring
 	if path == "k8s.io/kubernetes" {
 		gomod, err := newgomod.ParseMod()
 		if err != nil {
@@ -63,6 +69,11 @@ func (g *GomodHelper) Require(path, version string) error {
 			return err
 		}
 	}
+
+	if skipDeps {
+		return g.PinDependence(path, path, version)
+	}
+
 	// find local list deps
 	requireMod, err := newgomod.ParseMod()
 	if err != nil {
@@ -87,10 +98,15 @@ func (g *GomodHelper) Require(path, version string) error {
 		}
 	}
 
-	if err := g.EditRequire(path, version); err != nil {
+	return g.PinDependence(path, path, version)
+}
+
+func (g *GomodHelper) PinDependence(oldPath, newPath, version string) error {
+	g.logger.Info("pin dependence", "oldPath", oldPath, "newPath", newPath, "version", version)
+	if err := g.EditRequire(oldPath, version); err != nil {
 		return err
 	}
-	if err := g.EditReplace(path, path, version); err != nil {
+	if err := g.EditReplace(oldPath, newPath, version); err != nil {
 		return err
 	}
 	return nil
@@ -209,84 +225,6 @@ func (g *GomodHelper) ParseListMod() ([]ListModule, error) {
 
 	restoreGomod(g.modfile, file)
 	return ret, nil
-}
-
-func (g *GomodHelper) ModTidy() error {
-	_, err := g.goRunner.RunCombinedOutput("mod", "tidy")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (g *GomodHelper) PruneReplace() error {
-	// prune replace directives that pin to the naturally selected version.
-	// do this before tidying, since tidy removes unused modules that
-	// don't provide any relevant packages, which forgets which version of the
-	// unused transitive dependency we had a require directive for,
-	// and prevents pruning the matching replace directive after tidying.
-	listMods, err := g.ParseListMod()
-	if err != nil {
-		return err
-	}
-
-	for _, m := range listMods {
-		if m.Replace != nil && m.Path == m.Replace.Path && m.Version == m.Replace.Version &&
-			!strings.HasPrefix(m.Path, "k8s.io/") {
-			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path)
-			if err := g.EditDropreplace(m.Path); err != nil {
-				return err
-			}
-		}
-	}
-
-	// run go mod tidy
-	if err := g.ModTidy(); err != nil {
-		return err
-	}
-
-	// prune unused pinned replace directives
-	used := goset.NewSet()
-	listMods, err = g.ParseListMod()
-	if err != nil {
-		return err
-	}
-
-	for _, m := range listMods {
-		used.Add(m.Path) //nolint:errcheck
-	}
-
-	gomod, err := g.ParseMod()
-	if err != nil {
-		return err
-	}
-
-	for _, r := range gomod.Replace {
-		if !used.Contains(r.Old.Path) {
-			g.logger.Info("drop replace", "reason", "unused", "path", r.Old.Path)
-			// this replace is not found in go list, drop it
-			if err := g.EditDropreplace(r.Old.Path); err != nil {
-				return err
-			}
-		}
-	}
-
-	// prune replace directives that pin to the naturally selected version
-	listMods, err = g.ParseListMod()
-	if err != nil {
-		return err
-	}
-	for _, m := range listMods {
-		if m.Replace != nil && m.Path == m.Replace.Path && m.Version == m.Replace.Version &&
-			!strings.HasPrefix(m.Path, "k8s.io/") {
-			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path)
-			if err := g.EditDropreplace(m.Path); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 func (g *GomodHelper) ModDownload(path, version string) (*DownloadModule, error) {

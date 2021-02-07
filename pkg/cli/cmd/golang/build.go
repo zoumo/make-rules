@@ -18,8 +18,6 @@ import (
 )
 
 var (
-	defaultPlatforms = []string{"linux/amd64", "darwin/amd64"}
-
 	RequiredGoEnvKeys = []string{
 		"GO111MODULE",
 		"GOFLAGS",
@@ -58,13 +56,10 @@ type gobuildSubcommand struct {
 	goCmd   *runner.Runner
 	bashCmd *runner.Runner
 
-	platformsFlag []string
-
-	allTargets     []string
-	targets        []string
-	platforms      []platform
-	module         string
-	globalHooksDir string
+	allTargets []string
+	targets    []string
+	platforms  []platform
+	module     string
 
 	git     *git.Repository
 	version string
@@ -72,10 +67,9 @@ type gobuildSubcommand struct {
 
 func NewGobuildCommand() plugin.Subcommand {
 	return &gobuildSubcommand{
-		InjectionMixin: &injection.InjectionMixin{},
+		InjectionMixin: injection.NewInjectionMixin(),
 		goCmd:          runner.NewRunner("go"),
 		bashCmd:        runner.NewRunner("bash"),
-		platformsFlag:  defaultPlatforms,
 	}
 }
 
@@ -84,18 +78,16 @@ func (c *gobuildSubcommand) Name() string {
 }
 
 func (c *gobuildSubcommand) BindFlags(fs *pflag.FlagSet) {
-	fs.StringSliceVar(&c.platformsFlag, "platforms", c.platformsFlag, "go build target platforms")
+	fs.StringSliceVar(&c.Config.Go.Build.Platforms, "platforms", c.Config.Go.Build.Platforms, "go build target platforms")
+	fs.StringVar(&c.Config.Go.Build.GlobalHooksDir, "global-hooks-dir", c.Config.Go.Build.GlobalHooksDir, "the global pre-build and post-build hooks dir")
 	fs.StringVar(&c.version, "version", c.version, "go build target version")
-	fs.StringVar(&c.globalHooksDir, "global-hooks-dir", c.globalHooksDir, "the global pre-build and post-build hooks dir")
 }
 
 func (c *gobuildSubcommand) init(args []string) error {
 	// convert platforms
-	if len(c.platformsFlag) == 0 {
-		c.platformsFlag = defaultPlatforms
-	}
+	c.Config.SetDefaults()
 
-	for _, p := range c.platformsFlag {
+	for _, p := range c.Config.Go.Build.Platforms {
 		if pf := readPlatform(p); pf != nil {
 			c.platforms = append(c.platforms, *pf)
 		}
@@ -115,10 +107,6 @@ func (c *gobuildSubcommand) init(args []string) error {
 	}
 	c.allTargets = allTargets
 	c.targets = utils.FilterTargets(args, c.allTargets, "cmd")
-	// for i := range c.targets {
-	// 	// nomalize target path
-	// 	c.targets[i] = path.Join(c.module, c.targets[i])
-	// }
 
 	if len(c.targets) == 0 {
 		c.Logger.Info("!! no valid go build target specified")
@@ -132,7 +120,7 @@ func (c *gobuildSubcommand) init(args []string) error {
 		c.git = r
 	}
 
-	c.Logger.Info("Go compiling platforms", "platforms", strings.Join(c.platformsFlag, ","))
+	c.Logger.Info("Go compiling platforms", "platforms", c.Config.Go.Build.Platforms)
 	c.Logger.Info("Go compiling targets", "targets", c.targets)
 	return nil
 }
@@ -226,7 +214,7 @@ func (c *gobuildSubcommand) runHook(dir string, phase HookPhase) error {
 		cmd := c.bashCmd.WithEnvs(
 			"MAKE_RULES_WORKSPACE", c.Workspace,
 			"MAKE_RULES_GO_BUILD_BINARY_DIRS", strings.Join(outdirs, ","),
-			"MAKE_RULES_GO_BUILD_PLATFORMS", strings.Join(c.platformsFlag, ","),
+			"MAKE_RULES_GO_BUILD_PLATFORMS", strings.Join(c.Config.Go.Build.Platforms, ","),
 		)
 		c.Logger.Info("hook started", "phase", phase, "path", hook)
 		out, err := cmd.RunCombinedOutput(hook)
@@ -244,7 +232,7 @@ func (c *gobuildSubcommand) PreRun(args []string) error {
 		return err
 	}
 	// run global hooks
-	if err := c.runHook(c.globalHooksDir, PreBuildHook); err != nil {
+	if err := c.runHook(c.Config.Go.Build.GlobalHooksDir, PreBuildHook); err != nil {
 		return err
 	}
 	return nil
@@ -252,7 +240,7 @@ func (c *gobuildSubcommand) PreRun(args []string) error {
 
 func (c *gobuildSubcommand) PostRun(args []string) error {
 	// run global hooks
-	if err := c.runHook(c.globalHooksDir, PostBuildHook); err != nil {
+	if err := c.runHook(c.Config.Go.Build.GlobalHooksDir, PostBuildHook); err != nil {
 		return err
 	}
 	return nil
