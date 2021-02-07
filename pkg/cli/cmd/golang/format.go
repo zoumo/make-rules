@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/pflag"
+	"github.com/zoumo/goset"
 
 	"github.com/zoumo/make-rules/pkg/cli/injection"
 	"github.com/zoumo/make-rules/pkg/cli/plugin"
@@ -34,8 +35,8 @@ var (
 )
 
 type exclude struct {
-	files       map[string]bool
-	dirs        map[string]bool
+	files       goset.Set
+	dirs        goset.Set
 	fileRegexps []*regexp.Regexp
 	dirRegexps  []*regexp.Regexp
 	logger      logr.Logger
@@ -43,8 +44,8 @@ type exclude struct {
 
 func defaultExclued(logger logr.Logger) *exclude {
 	e := &exclude{
-		files:       make(map[string]bool),
-		dirs:        make(map[string]bool),
+		files:       goset.NewSet(),
+		dirs:        goset.NewSet(),
 		fileRegexps: make([]*regexp.Regexp, 0),
 		dirRegexps:  make([]*regexp.Regexp, 0),
 		logger:      logger,
@@ -61,7 +62,7 @@ func defaultExclued(logger logr.Logger) *exclude {
 
 func (e *exclude) MatchDir(dir string) (string, bool) {
 	basename := path.Base(dir)
-	if _, ok := e.dirs[basename]; ok {
+	if e.dirs.Contains(basename) {
 		return basename, true
 	}
 	for _, reg := range e.dirRegexps {
@@ -74,7 +75,7 @@ func (e *exclude) MatchDir(dir string) (string, bool) {
 
 func (e *exclude) MatchFile(filename string) (string, bool) {
 	basename := path.Base(filename)
-	if _, ok := e.files[basename]; ok {
+	if e.files.Contains(basename) {
 		return basename, true
 	}
 	for _, reg := range e.fileRegexps {
@@ -87,13 +88,13 @@ func (e *exclude) MatchFile(filename string) (string, bool) {
 
 // Add a explicit dir path not a regexp
 func (e *exclude) AddDir(dir string) {
-	e.dirs[path.Base(dir)] = true
+	e.dirs.Add(path.Base(dir)) // nolint
 }
 
 // Add a dir path regexp
 func (e *exclude) AddDirRegexp(dirE string) {
 	// firstly we add dir regexp directly to try to match the base path
-	e.dirs[dirE] = true
+	e.dirs.Add(dirE) // nolint
 	// compile regexp
 	reg, err := regexp.Compile(dirE)
 	if err != nil {
@@ -104,11 +105,11 @@ func (e *exclude) AddDirRegexp(dirE string) {
 }
 
 func (e *exclude) AddFile(file string) {
-	e.files[path.Base(file)] = true
+	e.files.Add(path.Base(file)) // nolint
 }
 
 func (e *exclude) AddFileRegexp(fileE string) {
-	e.files[fileE] = true
+	e.files.Add(fileE) // nolint
 	// compile regexp
 	reg, err := regexp.Compile(fileE)
 	if err != nil {

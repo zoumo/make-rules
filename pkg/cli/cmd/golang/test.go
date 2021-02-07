@@ -70,7 +70,7 @@ func (c *goUnittestSubcommand) PreRun(args []string) error {
 	}
 
 	regs := []*regexp.Regexp{}
-	c.Config.Go.Test.Exclude = append(c.Config.Go.Test.Exclude, excludeDir...)
+	c.Config.Go.Test.Exclude = append(c.Config.Go.Test.Exclude, excludeTest...)
 	for _, e := range c.Config.Go.Test.Exclude {
 		expr := fmt.Sprintf(".*/%s/?", e)
 		reg, err := regexp.Compile(expr)
