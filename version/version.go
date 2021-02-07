@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
+	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -14,8 +15,6 @@ var (
 )
 
 // Info contains versioning information.
-// TODO: Add []string of api versions supported? It's still unclear
-// how we'll want to distribute that information.
 type Info struct {
 	GitCommit    string `json:"gitCommit"`
 	GitRemote    string `json:"gitRemote"`
@@ -58,8 +57,8 @@ func (info Info) IsDirty() bool {
 // what code a binary was built from.
 func Get() Info {
 	// These variables typically come from -ldflags settings and in
-	// their absence fallback to the settings in pkg/version/base.go
-	return Info{
+	// their absence fallback to the settings in version/base.go
+	info := Info{
 		GitVersion:   gitVersion,
 		GitCommit:    gitCommit,
 		GitTreeState: gitTreeState,
@@ -69,6 +68,16 @@ func Get() Info {
 		Compiler:     runtime.Compiler,
 		Platform:     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
 	}
+
+	if info.GitVersion == "" || info.GitVersion == "unknown" {
+		// replace unknown version by build info
+		// it works when building by go get
+		i, ok := debug.ReadBuildInfo()
+		if ok {
+			info.GitVersion = i.Main.Version
+		}
+	}
+	return info
 }
 
 // NewCommand returns a command to show the version
