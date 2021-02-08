@@ -37,7 +37,7 @@ func (c *modUpdateSubcommand) PreRun(args []string) error {
 func (c *modUpdateSubcommand) Run(args []string) error {
 	// ensure requires
 	for _, r := range c.Config.Go.Mod.Require {
-		if err := c.gomod.Require(r.Path, r.Version, r.SkipDeps); err != nil {
+		if err := c.gomod.Require(r.Path, r.Version, false); err != nil {
 			return err
 		}
 	}
@@ -47,7 +47,7 @@ func (c *modUpdateSubcommand) Run(args []string) error {
 		if r.NewPath != "" {
 			newPath = r.NewPath
 		}
-		if err := c.gomod.PinDependence(r.OldPath, newPath, r.Version); err != nil {
+		if err := c.gomod.Replace(r.OldPath, newPath, r.Version); err != nil {
 			return err
 		}
 	}

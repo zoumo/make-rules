@@ -71,7 +71,7 @@ func (g *GomodHelper) Require(path, version string, skipDeps bool) error {
 	}
 
 	if skipDeps {
-		return g.PinDependence(path, path, version)
+		return g.pinDependence(path, path, version)
 	}
 
 	// find local list deps
@@ -98,10 +98,20 @@ func (g *GomodHelper) Require(path, version string, skipDeps bool) error {
 		}
 	}
 
-	return g.PinDependence(path, path, version)
+	return g.pinDependence(path, path, version)
 }
 
-func (g *GomodHelper) PinDependence(oldPath, newPath, version string) error {
+func (g *GomodHelper) Replace(oldPath, newPath, version string) error {
+	// find true version
+	mod, err := g.ModDownload(newPath, version)
+	if err != nil {
+		return err
+	}
+	version = mod.Version
+	return g.pinDependence(oldPath, newPath, version)
+}
+
+func (g *GomodHelper) pinDependence(oldPath, newPath, version string) error {
 	g.logger.Info("pin dependence", "oldPath", oldPath, "newPath", newPath, "version", version)
 	if err := g.EditRequire(oldPath, version); err != nil {
 		return err

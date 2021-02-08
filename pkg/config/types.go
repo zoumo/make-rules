@@ -38,9 +38,8 @@ type GoMod struct {
 }
 
 type GoModRequire struct {
-	Path     string `json:"path,omitempty"`
-	Version  string `json:"version,omitempty"`
-	SkipDeps bool   `json:"skipDeps,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 type GoModReplace struct {
