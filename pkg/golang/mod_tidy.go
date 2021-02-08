@@ -132,35 +132,87 @@ func (g *GomodHelper) pruneReplace() error {
 // 2. 'require' with valid version, e.g. require k8s.io/api v0.18.0 but replace k8s.io/api => k8s.io/api v0.17.0, use v0.18.0
 // 3. 'replace' with valid version, e.g. require k8s.io/api v0.0.0 and replace k8s.io/api => k8s.io/api v0.18.0, use v0.18.0
 func (g *GomodHelper) ensureRequireAndReplace() error {
-	gomod, err := g.ParseMod()
-	if err != nil {
-		return err
-	}
 	// 1. Ensure 'replace' directives have an explicit 'require' directive
 	// Filter all 'requires' whose path are not replaced and respect original
 	// requires whose path is not replaced to avoid overwrite by replace
+	convert := func(req Require, replace Replace) ListModule {
+		version := req.Version
+		if IsValidVersion(replace.New.Version) &&
+			(!IsValidVersion(req.Version) || replace.Old.Path != replace.New.Path) {
+			// overwrite version if 'require' a invalid version or path changed
+			version = replace.New.Version
+		}
+		return ListModule{
+			Path:     req.Path,
+			Version:  version,
+			Indirect: req.Indirect,
+			Replace: &ListModule{
+				Path:    replace.New.Path,
+				Version: version,
+			},
+		}
+	}
+	mod, err := g.parseGomodToModules(convert)
+	if err != nil {
+		return err
+	}
+	if err := g.overwriteGomod(mod); err != nil {
+		return err
+	}
+
+	// 2. Add explicit require directives for indirect dependencies.
+	//    Add explicit replace directives pinning dependencies that aren't pinned yet
+	return g.ensureRequireAndReplaceFromGolist()
+}
+
+func (g *GomodHelper) ensureMissingRequireAndReplace() error {
+	// 1. Add missing require for replace and Add missing replace for require
+	convert := func(req Require, replace Replace) ListModule {
+		return ListModule{
+			Path:     req.Path,
+			Version:  req.Version,
+			Indirect: req.Indirect,
+			Replace: &ListModule{
+				Path:    replace.New.Path,
+				Version: replace.New.Version,
+			},
+		}
+	}
+	mod, err := g.parseGomodToModules(convert)
+	if err != nil {
+		return err
+	}
+
+	if err := g.overwriteGomod(mod); err != nil {
+		return err
+	}
+
+	// 2. Add explicit require directives for indirect dependencies.
+	//    Add explicit replace directives pinning dependencies that aren't pinned yet
+	return g.ensureRequireAndReplaceFromGolist()
+}
+
+func (g *GomodHelper) parseGomodToModules(conflict func(Require, Replace) ListModule) (map[string]ListModule, error) {
+	gomod, err := g.ParseMod()
+	if err != nil {
+		return nil, err
+	}
+	// 1. Add missing require for replace and Add missing replace for require
 	golist := map[string]ListModule{}
 	for _, r := range gomod.Require {
 		golist[r.Path] = ListModule{
 			Path:     r.Path,
 			Version:  r.Version,
 			Indirect: r.Indirect,
+			Replace: &ListModule{
+				Path:    r.Path,
+				Version: r.Version,
+			},
 		}
 	}
 	for _, r := range gomod.Replace {
 		found, ok := golist[r.Old.Path]
-		if ok {
-			if !IsValidVersion(found.Version) ||
-				(r.Old.Path != r.New.Path && IsValidVersion(r.New.Version)) {
-				// overwrite version: invalid version or path changed
-				found.Version = r.New.Version
-			}
-			found.Replace = &ListModule{
-				Path:    r.New.Path,
-				Version: r.New.Version,
-			}
-			golist[r.Old.Path] = found
-		} else {
+		if !ok {
 			golist[r.Old.Path] = ListModule{
 				Path:    r.Old.Path,
 				Version: r.New.Version,
@@ -169,10 +221,16 @@ func (g *GomodHelper) ensureRequireAndReplace() error {
 					Version: r.New.Version,
 				},
 			}
+		} else {
+			golist[r.Old.Path] = conflict(Require{Path: found.Path, Version: found.Version, Indirect: found.Indirect}, r)
 		}
 	}
 
-	for _, m := range golist {
+	return golist, nil
+}
+
+func (g *GomodHelper) overwriteGomod(mod map[string]ListModule) error {
+	for _, m := range mod {
 		if m.Replace == nil {
 			// add missing replace
 			m.Replace = &ListModule{
@@ -191,63 +249,7 @@ func (g *GomodHelper) ensureRequireAndReplace() error {
 			}
 		}
 	}
-
-	// 2. Add explicit require directives for indirect dependencies.
-	//    Add explicit replace directives pinning dependencies that aren't pinned yet
-	return g.ensureRequireAndReplaceFromGolist()
-}
-
-func (g *GomodHelper) ensureMissingRequireAndReplace() error {
-	gomod, err := g.ParseMod()
-	if err != nil {
-		return err
-	}
-	// 1. Add missing require for replace and Add missing replace for require
-	golist := map[string]ListModule{}
-	for _, r := range gomod.Require {
-		golist[r.Path] = ListModule{
-			Path:     r.Path,
-			Version:  r.Version,
-			Indirect: r.Indirect,
-		}
-	}
-	for _, r := range gomod.Replace {
-		_, ok := golist[r.Old.Path]
-		if !ok {
-			golist[r.Old.Path] = ListModule{
-				Path:    r.Old.Path,
-				Version: r.Old.Version,
-				Replace: &ListModule{
-					Path:    r.New.Path,
-					Version: r.New.Version,
-				},
-			}
-		}
-	}
-
-	for _, m := range golist {
-		if m.Replace == nil {
-			// add missing replace
-			m.Replace = &ListModule{
-				Path:    m.Path,
-				Version: m.Version,
-			}
-		}
-		if IsValidVersion(m.Version) {
-			if err := g.EditRequire(m.Path, m.Version); err != nil {
-				return err
-			}
-		}
-		if m.Replace.Version != "" {
-			if err := g.EditReplace(m.Path, m.Replace.Path, m.Replace.Version); err != nil {
-				return err
-			}
-		}
-	}
-
-	// 2. Add explicit require directives for indirect dependencies.
-	//    Add explicit replace directives pinning dependencies that aren't pinned yet
-	return g.ensureRequireAndReplaceFromGolist()
+	return nil
 }
 
 func (g *GomodHelper) ensureRequireAndReplaceFromGolist() error {
