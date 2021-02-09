@@ -67,7 +67,7 @@ func (g *GomodHelper) pruneReplace() error {
 	for _, m := range listMods {
 		if m.Replace != nil && m.Path == m.Replace.Path && m.Version == m.Replace.Version &&
 			!strings.HasPrefix(m.Path, "k8s.io/") {
-			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path)
+			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path, "version", m.Version)
 			if err := g.EditDropreplace(m.Path); err != nil {
 				return err
 			}
@@ -97,7 +97,7 @@ func (g *GomodHelper) pruneReplace() error {
 
 	for _, r := range gomod.Replace {
 		if !used.Contains(r.Old.Path) {
-			g.logger.Info("drop replace", "reason", "unused", "path", r.Old.Path)
+			g.logger.Info("drop replace", "reason", "unused", "path", r.Old.Path, "version", r.New.Version)
 			// this replace is not found in go list, drop it
 			if err := g.EditDropreplace(r.Old.Path); err != nil {
 				return err
@@ -113,7 +113,7 @@ func (g *GomodHelper) pruneReplace() error {
 	for _, m := range listMods {
 		if m.Replace != nil && m.Path == m.Replace.Path && m.Version == m.Replace.Version &&
 			!strings.HasPrefix(m.Path, "k8s.io/") {
-			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path)
+			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path, "version", m.Version)
 			if err := g.EditDropreplace(m.Path); err != nil {
 				return err
 			}
