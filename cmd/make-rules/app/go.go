@@ -73,6 +73,12 @@ func newGoModCommand(cfg *config.Config) *cobra.Command {
 		injection.InjectConfig(cfg),
 	))
 	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
+		golang.NewModReplaceCommand(),
+		injection.InjectLogger(logger),
+		injection.InjectWorkspace(),
+		injection.InjectConfig(cfg),
+	))
+	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
 		golang.NewModUpdateCommand(),
 		injection.InjectLogger(logger),
 		injection.InjectWorkspace(),

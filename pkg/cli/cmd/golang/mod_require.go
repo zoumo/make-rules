@@ -13,8 +13,7 @@ import (
 
 type modRequireSubcommand struct {
 	*injection.InjectionMixin
-	gomod    *golang.GomodHelper
-	skipDeps bool
+	gomod *golang.GomodHelper
 }
 
 func NewModRequireCommand() plugin.Subcommand {
@@ -28,7 +27,6 @@ func (c *modRequireSubcommand) Name() string {
 }
 
 func (c *modRequireSubcommand) BindFlags(fs *pflag.FlagSet) {
-	fs.BoolVar(&c.skipDeps, "skip-deps", c.skipDeps, "skip require dependencies of input modules")
 }
 
 func (c *modRequireSubcommand) PreRun(args []string) error {
@@ -44,5 +42,5 @@ func (c *modRequireSubcommand) PreRun(args []string) error {
 func (c *modRequireSubcommand) Run(args []string) error {
 	path := args[0]
 	version := args[1]
-	return c.gomod.Require(path, version, c.skipDeps)
+	return c.gomod.Require(path, version, false)
 }
