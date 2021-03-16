@@ -25,7 +25,6 @@ var (
 		"vendor",
 		"hack",
 		"bin",
-		"temp",
 		"output",
 		"generated",
 	}
@@ -182,7 +181,7 @@ func (c *formatSubcommand) Run(args []string) error {
 			// skip some dir
 			rule, match := exclude.MatchDir(file)
 			if match {
-				c.Logger.Info("skip", "dir", file, "matchRule", rule)
+				c.Logger.Info("", "action", "skip", "dir", file, "matchRule", rule)
 				return filepath.SkipDir
 			}
 			return nil
@@ -196,7 +195,7 @@ func (c *formatSubcommand) Run(args []string) error {
 		}
 		rule, match := exclude.MatchFile(file)
 		if match {
-			c.Logger.Info("skip", "file", file, "matchRule", rule)
+			c.Logger.Info("", "action", "skip", "file", file, "matchRule", rule)
 			return nil
 		}
 
@@ -217,7 +216,7 @@ func (c *formatSubcommand) format(finename string) error {
 		c.Logger.Error(err, "failed to format go file", "file", finename, "output", string(out))
 		return err
 	}
-	c.Logger.Info("done", "file", finename)
+	c.Logger.Info("", "action", "done", "file", finename)
 	return nil
 }
 

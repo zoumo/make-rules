@@ -2,16 +2,16 @@ package app
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/klog/v2/klogr"
 
 	cliflag "github.com/zoumo/make-rules/pkg/cli/flag"
 	"github.com/zoumo/make-rules/pkg/config"
+	"github.com/zoumo/make-rules/pkg/consolog"
 	"github.com/zoumo/make-rules/pkg/log"
 	"github.com/zoumo/make-rules/version"
 )
 
 func init() {
-	log.SetLogger(klogr.New())
+	log.SetLogger(consolog.New())
 }
 
 func NewRootCommand() *cobra.Command {

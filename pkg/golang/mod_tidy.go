@@ -41,7 +41,6 @@ func (g *GomodHelper) PruneAndTidy() error {
 		return err
 	}
 
-	g.logger.Info("====================> go mod tiding <====================")
 	if err := g.pruneReplace(); err != nil {
 		return err
 	}

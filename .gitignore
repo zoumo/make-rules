@@ -19,3 +19,5 @@ tmpbin/
 # vendor/
 
 /make-rules
+
+.DS_store

@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
+	"runtime"
 
 	"sigs.k8s.io/yaml"
 )
@@ -11,7 +13,7 @@ const (
 )
 
 var (
-	DefaultPlatforms = []string{"linux/amd64", "darwin/amd64"}
+	DefaultPlatforms = []string{fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)}
 )
 
 func New() *Config {

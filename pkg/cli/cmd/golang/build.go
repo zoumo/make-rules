@@ -78,15 +78,15 @@ func (c *gobuildSubcommand) Name() string {
 }
 
 func (c *gobuildSubcommand) BindFlags(fs *pflag.FlagSet) {
+	// convert platforms
+	c.Config.SetDefaults()
+
 	fs.StringSliceVar(&c.Config.Go.Build.Platforms, "platforms", c.Config.Go.Build.Platforms, "go build target platforms")
 	fs.StringVar(&c.Config.Go.Build.GlobalHooksDir, "global-hooks-dir", c.Config.Go.Build.GlobalHooksDir, "the global pre-build and post-build hooks dir")
 	fs.StringVar(&c.version, "version", c.version, "go build target version")
 }
 
 func (c *gobuildSubcommand) init(args []string) error {
-	// convert platforms
-	c.Config.SetDefaults()
-
 	for _, p := range c.Config.Go.Build.Platforms {
 		if pf := readPlatform(p); pf != nil {
 			c.platforms = append(c.platforms, *pf)
@@ -120,8 +120,7 @@ func (c *gobuildSubcommand) init(args []string) error {
 		c.git = r
 	}
 
-	c.Logger.Info("Go compiling platforms", "platforms", c.Config.Go.Build.Platforms)
-	c.Logger.Info("Go compiling targets", "targets", c.targets)
+	c.Logger.Info("Before Go compiling", "platforms", c.Config.Go.Build.Platforms, "targets", c.targets)
 	return nil
 }
 
@@ -250,41 +249,42 @@ func (c *gobuildSubcommand) PostRun(args []string) error {
 
 func (c *gobuildSubcommand) Run(args []string) error {
 	for _, platform := range c.platforms {
-		c.Logger.Info("=================================================")
-		c.Logger.Info("Go cross compiling for target platform", "platform", platform.String())
+		c.Logger.Info("Go cross compiling", "platform", platform.String())
 		cmd := c.goCmd.WithEnvs(
 			"GOOS", platform.GOOS,
 			"GOARCH", platform.GOARCH,
-			"Workspace", c.Workspace,
+			"WORKSPACE", c.Workspace,
 		)
 		for _, t := range c.targets {
 			target := path.Join(c.module, t)
 			output := c.outputFile(platform, target)
 			hookDir := path.Join(c.Workspace, t)
-			c.Logger.Info("-------------------------------------------------")
 			// run pre build hook
 			if err := c.runHook(hookDir, PreBuildHook); err != nil {
 				return err
 			}
-			c.Logger.Info("Go compile started", "module", target, "output", output)
-			for k, v := range cmd.FilterEnv(RequiredGoEnvKeys) {
-				c.Logger.V(2).Info("Go env", k, v)
-			}
+			c.Logger.Info("Go build started", "module", target, "output", output)
 			// go build
 			args := c.gobuildArgs(output, target)
-			c.Logger.V(2).Info("Go build args", "args", args)
+			if c.Logger.V(2).Enabled() {
+				kvlist := []interface{}{}
+				for k, v := range cmd.FilterEnv(RequiredGoEnvKeys) {
+					kvlist = append(kvlist, k, v)
+				}
+				kvlist = append(kvlist, "args", args)
+				c.Logger.Info("Go env and args", kvlist...)
+			}
 			out, err := cmd.RunCombinedOutput(args...)
 			if err != nil {
 				c.Logger.Error(err, string(out))
 				return err
 			}
-			c.Logger.Info("Go compile completed", "module", target)
+			c.Logger.Info("Go build completed", "module", target)
 			// run post build hook
 			if err := c.runHook(hookDir, PostBuildHook); err != nil {
 				return err
 			}
 		}
-		c.Logger.Info("-------------------------------------------------")
 	}
 	return nil
 }
