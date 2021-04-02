@@ -29,6 +29,7 @@ func newGoCommand(cfg *config.Config) *cobra.Command {
 		},
 	}
 	cmd.AddCommand(newGoBuildCommand(cfg))
+	cmd.AddCommand(newGoInstallCommand(cfg))
 	cmd.AddCommand(newGoModCommand(cfg))
 	cmd.AddCommand(newGoFormatCommand(cfg))
 	cmd.AddCommand(newGoUnittestCommand(cfg))
@@ -39,6 +40,15 @@ func newGoCommand(cfg *config.Config) *cobra.Command {
 func newGoBuildCommand(cfg *config.Config) *cobra.Command {
 	return plugin.NewCobraSubcommandOrDie(
 		golang.NewGobuildCommand(),
+		injection.InjectLogger(gologger.WithName("build")),
+		injection.InjectWorkspace(),
+		injection.InjectConfig(cfg),
+	)
+}
+
+func newGoInstallCommand(cfg *config.Config) *cobra.Command {
+	return plugin.NewCobraSubcommandOrDie(
+		golang.NewGoInstallCommand(),
 		injection.InjectLogger(gologger.WithName("build")),
 		injection.InjectWorkspace(),
 		injection.InjectConfig(cfg),
