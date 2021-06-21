@@ -3,9 +3,10 @@ package app
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/zoumo/golib/cli/plugin"
+
 	"github.com/zoumo/make-rules/pkg/cli/cmd/golang"
 	"github.com/zoumo/make-rules/pkg/cli/injection"
-	"github.com/zoumo/make-rules/pkg/cli/plugin"
 	"github.com/zoumo/make-rules/pkg/config"
 	goutil "github.com/zoumo/make-rules/pkg/golang"
 	"github.com/zoumo/make-rules/pkg/log"

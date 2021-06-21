@@ -3,12 +3,14 @@ package injection
 import (
 	"github.com/go-logr/logr"
 
+	"github.com/zoumo/golib/cli/injection"
+
 	"github.com/zoumo/make-rules/pkg/config"
 )
 
 var _ RequiresConfig = &InjectionMixin{}
-var _ RequiresLogger = &InjectionMixin{}
-var _ RequiresWorkspace = &InjectionMixin{}
+var _ injection.RequiresLogger = &InjectionMixin{}
+var _ injection.RequiresWorkspace = &InjectionMixin{}
 
 //nolint:golint
 type InjectionMixin struct {

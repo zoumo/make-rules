@@ -6,9 +6,10 @@ import (
 
 	"github.com/spf13/pflag"
 
+	"github.com/zoumo/golib/cli/plugin"
+
 	"github.com/zoumo/make-rules/pkg/cli/cmd/utils"
 	"github.com/zoumo/make-rules/pkg/cli/injection"
-	"github.com/zoumo/make-rules/pkg/cli/plugin"
 	"github.com/zoumo/make-rules/pkg/git"
 	"github.com/zoumo/make-rules/pkg/runner"
 )

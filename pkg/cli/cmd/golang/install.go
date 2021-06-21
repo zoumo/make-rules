@@ -7,7 +7,7 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/zoumo/make-rules/pkg/cli/plugin"
+	"github.com/zoumo/golib/cli/plugin"
 )
 
 type goInstallSubcommand struct {
