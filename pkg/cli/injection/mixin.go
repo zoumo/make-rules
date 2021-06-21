@@ -2,7 +2,6 @@ package injection
 
 import (
 	"github.com/go-logr/logr"
-
 	"github.com/zoumo/golib/cli/injection"
 
 	"github.com/zoumo/make-rules/pkg/config"

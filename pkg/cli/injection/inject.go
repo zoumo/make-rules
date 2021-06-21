@@ -2,7 +2,6 @@ package injection
 
 import (
 	"github.com/spf13/cobra"
-
 	"github.com/zoumo/golib/cli/injection"
 	"github.com/zoumo/golib/cli/plugin"
 

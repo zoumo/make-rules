@@ -4,8 +4,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
-
-	"github.com/zoumo/make-rules/pkg/consolog"
+	"github.com/zoumo/golib/log/consolog"
 )
 
 // WordSepNormalizeFunc changes all flags that contain "_" separators

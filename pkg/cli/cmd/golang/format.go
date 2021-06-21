@@ -12,9 +12,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/pflag"
-	"github.com/zoumo/goset"
-
 	"github.com/zoumo/golib/cli/plugin"
+	"github.com/zoumo/goset"
 
 	"github.com/zoumo/make-rules/pkg/cli/injection"
 	"github.com/zoumo/make-rules/pkg/runner"

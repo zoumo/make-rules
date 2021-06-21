@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
-
 	"github.com/zoumo/golib/cli/plugin"
 
 	"github.com/zoumo/make-rules/pkg/cli/cmd/utils"

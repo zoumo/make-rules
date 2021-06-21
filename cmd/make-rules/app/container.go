@@ -2,7 +2,6 @@ package app
 
 import (
 	"github.com/spf13/cobra"
-
 	"github.com/zoumo/golib/cli/plugin"
 
 	"github.com/zoumo/make-rules/pkg/cli/cmd/container"
