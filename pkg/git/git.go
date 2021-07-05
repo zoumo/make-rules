@@ -27,6 +27,7 @@ func Open(dir string) (*Repository, error) {
 	}
 	return &Repository{
 		Repository: r,
+		tags:       make(map[plumbing.Hash]*plumbing.Reference),
 	}, err
 }
 
