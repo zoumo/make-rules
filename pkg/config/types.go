@@ -13,10 +13,11 @@ type Config struct {
 }
 
 type Go struct {
-	Build  GoBuild  `json:"build,omitempty"`
-	Mod    GoMod    `json:"mod,omitempty"`
-	Format GoFormat `json:"format,omitempty"`
-	Test   GoTest   `json:"test,omitempty"`
+	MinimumVersion string   `json:"minimumVersion,omitempty"`
+	Build          GoBuild  `json:"build,omitempty"`
+	Mod            GoMod    `json:"mod,omitempty"`
+	Format         GoFormat `json:"format,omitempty"`
+	Test           GoTest   `json:"test,omitempty"`
 }
 
 type GoTest struct {

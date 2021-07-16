@@ -22,7 +22,7 @@ func newGoCommand(cfg *config.Config) *cobra.Command {
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			gologger.V(1).Info("make-rules config", "config", cfg)
-			if err := goutil.VerifyGoVersion(); err != nil {
+			if err := goutil.VerifyGoVersion(cfg.Go.MinimumVersion); err != nil {
 				return err
 			}
 			return nil

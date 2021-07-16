@@ -1,5 +1,6 @@
 version: 1
 go:
+  minimumVersion: 1.14
   test:
     exclude:
       - testdata
