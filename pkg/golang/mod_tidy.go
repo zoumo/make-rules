@@ -64,6 +64,10 @@ func (g *GomodHelper) pruneReplace() error {
 	}
 
 	for _, m := range listMods {
+		if g.pinned.Contains(m.Path) {
+			// ignore pinned packages
+			continue
+		}
 		if m.Replace != nil && m.Path == m.Replace.Path && m.Version == m.Replace.Version &&
 			!strings.HasPrefix(m.Path, "k8s.io/") {
 			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path, "version", m.Version)
@@ -95,6 +99,10 @@ func (g *GomodHelper) pruneReplace() error {
 	}
 
 	for _, r := range gomod.Replace {
+		if g.pinned.Contains(r.Old.Path) {
+			// ignore pinned packages
+			continue
+		}
 		if !used.Contains(r.Old.Path) {
 			g.logger.Info("drop replace", "reason", "unused", "path", r.Old.Path, "version", r.New.Version)
 			// this replace is not found in go list, drop it
@@ -110,6 +118,10 @@ func (g *GomodHelper) pruneReplace() error {
 		return err
 	}
 	for _, m := range listMods {
+		if g.pinned.Contains(m.Path) {
+			// ignore pinned packages
+			continue
+		}
 		if m.Replace != nil && m.Path == m.Replace.Path && m.Version == m.Replace.Version &&
 			!strings.HasPrefix(m.Path, "k8s.io/") {
 			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path, "version", m.Version)

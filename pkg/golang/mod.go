@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/zoumo/goset"
 
 	"github.com/zoumo/make-rules/pkg/runner"
 )
@@ -27,6 +28,7 @@ type GomodHelper struct {
 	modfile      string
 	logger       logr.Logger
 	downloadTemp string
+	pinned       goset.Set
 }
 
 func NewGomodHelper(modfile string, logger logr.Logger) *GomodHelper {
@@ -34,6 +36,7 @@ func NewGomodHelper(modfile string, logger logr.Logger) *GomodHelper {
 		modfile:  modfile,
 		goRunner: runner.NewRunner("go").WithDir(path.Dir(modfile)),
 		logger:   logger,
+		pinned:   goset.NewSet(),
 	}
 	return g
 }
@@ -119,6 +122,8 @@ func (g *GomodHelper) pinDependence(oldPath, newPath, version string) error {
 	if err := g.EditReplace(oldPath, newPath, version); err != nil {
 		return err
 	}
+
+	g.pinned.Add(oldPath) //nolint
 	return nil
 }
 
