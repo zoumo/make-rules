@@ -105,6 +105,11 @@ func (g *GomodHelper) Require(path, version string, skipDeps bool) error {
 }
 
 func (g *GomodHelper) Replace(oldPath, newPath, version string) error {
+	if !IsValidVersion(version) {
+		// replace to local path using a invalid version
+		return g.pinDependence(oldPath, newPath, "v0.0.0")
+	}
+
 	// find true version
 	mod, err := g.ModDownload(newPath, version)
 	if err != nil {
@@ -277,7 +282,11 @@ func (g *GomodHelper) edit(verb ModeEditVerb, oldPath, newPath, version string) 
 	case EditRequire:
 		arg = fmt.Sprintf("-require=%s@%s", oldPath, version)
 	case EditReplace:
-		arg = fmt.Sprintf("-replace=%s=%s@%s", oldPath, newPath, version)
+		if IsValidVersion(version) {
+			arg = fmt.Sprintf("-replace=%s=%s@%s", oldPath, newPath, version)
+		} else {
+			arg = fmt.Sprintf("-replace=%s=%s", oldPath, newPath)
+		}
 	case EditDropreplace:
 		arg = fmt.Sprintf("-dropreplace=%s", oldPath)
 	default:
@@ -307,7 +316,8 @@ func restoreGomod(modfile, tempfile string) {
 }
 
 func IsValidVersion(version string) bool {
-	if version == "" || version == "v0.0.0" || version == "v0.0.0-00010101000000-000000000000" {
+	switch version {
+	case "", "v0.0.0", "v0.0.0-00010101000000-000000000000", "v0":
 		return false
 	}
 	return true
