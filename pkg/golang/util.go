@@ -13,27 +13,30 @@ const (
 	MinimumGoVersion = "1.13.0"
 )
 
-func getGoVersion() (string, error) {
+var (
+	go1160 = semver.MustParse("v1.16.0")
+)
+
+func getGoVersion() (*semver.Version, error) {
 	cmd := runner.NewRunner("go")
 	out, err := cmd.RunCombinedOutput("version")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	output := strings.Split(string(out), " ")
 
 	if len(output) != 4 {
-		return "", fmt.Errorf("get error go version output: %v", string(out))
+		return nil, fmt.Errorf("get error go version output: %v", string(out))
 	}
-	return output[2], nil
+	sv, err := semver.NewVersion(strings.TrimPrefix(output[2], "go"))
+	if err != nil {
+		return nil, err
+	}
+	return sv, nil
 }
 
 func VerifyGoVersion(minimumGoVersion string) error {
-	version, err := getGoVersion()
-	if err != nil {
-		return err
-	}
-	v := strings.TrimPrefix(version, "go")
-	sv1, err := semver.NewVersion(v)
+	sv1, err := getGoVersion()
 	if err != nil {
 		return err
 	}
@@ -49,7 +52,7 @@ func VerifyGoVersion(minimumGoVersion string) error {
 	}
 
 	if sv1.Compare(sv2) < 0 {
-		return fmt.Errorf(`detected go version: %v. This project requires %v or greater. Please install %v or later`, v, minimumGoVersion, minimumGoVersion)
+		return fmt.Errorf(`detected go version: %v. This project requires %v or greater. Please install %v or later`, sv1.String(), minimumGoVersion, minimumGoVersion)
 	}
 
 	return nil

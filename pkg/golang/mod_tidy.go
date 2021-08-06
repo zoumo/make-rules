@@ -21,30 +21,37 @@ func (g *GomodHelper) ModTidy() error {
 // 2. prune replace directives that pin to the naturally selected version.
 // 3. format and tidy go.mod
 func (g *GomodHelper) PruneAndTidy() error {
+	g.logger.Info("Prune and tidy")
+	g.logger.Info("ensures all existing 'require' directives have an associated 'replace' directive pinning a version")
 	if err := g.ensureRequireAndReplace(); err != nil {
 		g.logger.Error(err, "failed to ensure require and replace")
 		return err
 	}
 
+	g.logger.Info("go mod tidy")
 	if err := g.ModTidy(); err != nil {
 		g.logger.Error(err, "failed to run go mod tidy")
 		return err
 	}
 
+	g.logger.Info("ensures missing require and replace")
 	if err := g.ensureMissingRequireAndReplace(); err != nil {
 		g.logger.Error(err, "failed to ensure missing require and replace")
 		return err
 	}
 
+	g.logger.Info("format go.mod")
 	if err := g.Format(); err != nil {
 		g.logger.Error(err, "failed to format go.mod")
 		return err
 	}
 
+	g.logger.Info("pruning replace")
 	if err := g.pruneReplace(); err != nil {
 		return err
 	}
 
+	g.logger.Info("go mod tidy")
 	if err := g.ModTidy(); err != nil {
 		return err
 	}
@@ -70,7 +77,7 @@ func (g *GomodHelper) pruneReplace() error {
 		}
 		if m.Replace != nil && m.Path == m.Replace.Path && m.Version == m.Replace.Version &&
 			!strings.HasPrefix(m.Path, "k8s.io/") {
-			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path, "version", m.Version)
+			g.logger.V(1).Info("drop replace", "reason", "naturally selected", "path", m.Path, "version", m.Version)
 			if err := g.EditDropreplace(m.Path); err != nil {
 				return err
 			}
@@ -104,7 +111,7 @@ func (g *GomodHelper) pruneReplace() error {
 			continue
 		}
 		if !used.Contains(r.Old.Path) {
-			g.logger.Info("drop replace", "reason", "unused", "path", r.Old.Path, "version", r.New.Version)
+			g.logger.V(1).Info("drop replace", "reason", "unused", "path", r.Old.Path, "version", r.New.Version)
 			// this replace is not found in go list, drop it
 			if err := g.EditDropreplace(r.Old.Path); err != nil {
 				return err
@@ -124,7 +131,7 @@ func (g *GomodHelper) pruneReplace() error {
 		}
 		if m.Replace != nil && m.Path == m.Replace.Path && m.Version == m.Replace.Version &&
 			!strings.HasPrefix(m.Path, "k8s.io/") {
-			g.logger.Info("drop replace", "reason", "naturally selected", "path", m.Path, "version", m.Version)
+			g.logger.V(1).Info("drop replace", "reason", "naturally selected", "path", m.Path, "version", m.Version)
 			if err := g.EditDropreplace(m.Path); err != nil {
 				return err
 			}

@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/go-logr/logr"
 	"github.com/zoumo/goset"
 
@@ -29,15 +30,22 @@ type GomodHelper struct {
 	logger       logr.Logger
 	downloadTemp string
 	pinned       goset.Set
+	goVersion    *semver.Version
 }
 
 func NewGomodHelper(modfile string, logger logr.Logger) *GomodHelper {
-	g := &GomodHelper{
-		modfile:  modfile,
-		goRunner: runner.NewRunner("go").WithDir(path.Dir(modfile)),
-		logger:   logger,
-		pinned:   goset.NewSet(),
+	version, err := getGoVersion()
+	if err != nil {
+		panic(fmt.Sprintf("failed to get go version: %v", err))
 	}
+	g := &GomodHelper{
+		modfile:   modfile,
+		goRunner:  runner.NewRunner("go").WithDir(path.Dir(modfile)),
+		logger:    logger,
+		pinned:    goset.NewSet(),
+		goVersion: version,
+	}
+
 	return g
 }
 
@@ -54,7 +62,7 @@ func (g *GomodHelper) Require(path, version string, skipDeps bool) error {
 		return fmt.Errorf("module %s version %s does not have a go.mod file", path, version)
 	}
 
-	g.logger.Info("download go.mod", "filepath", modfile)
+	g.logger.Info("download required package/go.mod to temp dir", "package", path, "source", mod.GoMod, "target", modfile)
 
 	// replace version with mod version
 	version = mod.Version
@@ -85,7 +93,7 @@ func (g *GomodHelper) Require(path, version string, skipDeps bool) error {
 
 	for _, r := range requireMod.Require {
 		if IsValidVersion(r.Version) {
-			g.logger.Info(fmt.Sprintf("require %s@%s", r.Path, r.Version), "source", "require")
+			g.logger.V(2).Info(fmt.Sprintf("require %s@%s", r.Path, r.Version), "source", "require")
 			if err := g.EditRequire(r.Path, r.Version); err != nil {
 				return err
 			}
@@ -94,7 +102,7 @@ func (g *GomodHelper) Require(path, version string, skipDeps bool) error {
 
 	for _, r := range requireMod.Replace {
 		if IsValidVersion(r.New.Version) {
-			g.logger.Info(fmt.Sprintf("require %s@%s", r.Old.Path, r.New.Version), "source", "replace")
+			g.logger.V(2).Info(fmt.Sprintf("require %s@%s", r.Old.Path, r.New.Version), "source", "replace")
 			if err := g.EditRequire(r.Old.Path, r.New.Version); err != nil {
 				return err
 			}
@@ -222,6 +230,15 @@ func (g *GomodHelper) ParseListMod() ([]ListModule, error) {
 	// backup go.mod because go list will change go.mod
 	file := backupGomod(g.modfile)
 
+	if g.goVersion.Compare(go1160) >= 0 {
+		// go1.16.0
+		// we must run go mod tidy before go list if go version is
+		// greater than go1.16.0, otherwise it will fail.
+		err := g.ModTidy()
+		if err != nil {
+			return nil, err
+		}
+	}
 	out, err := g.goRunner.RunOutput("list", "-m", "-json", "all")
 	if err != nil {
 		return nil, err
