@@ -9,9 +9,9 @@ go:
       - "-v"
     globalHooksDir: hack/hooks
   mod:
-    replace:
-      - path: github.com/go-logr/logr
-        version: 8fc6c73
+    require: 
+    - path: github.com/zoumo/golog
+      version: v0.4.1
   format:
     local: github.com/zoumo/make-rules
     exclude:

@@ -3,15 +3,15 @@ package app
 import (
 	"github.com/spf13/cobra"
 	"github.com/zoumo/golib/cli/plugin"
+	"github.com/zoumo/golog"
 
 	"github.com/zoumo/make-rules/pkg/cli/cmd/container"
 	"github.com/zoumo/make-rules/pkg/cli/injection"
 	"github.com/zoumo/make-rules/pkg/config"
-	"github.com/zoumo/make-rules/pkg/log"
 )
 
 var (
-	containerlogger = log.Log.WithName("container")
+	containerlogger = golog.Log.WithName("container")
 )
 
 func newContainerCommand(cfg *config.Config) *cobra.Command {
