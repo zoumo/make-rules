@@ -2,8 +2,8 @@ package app
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/zoumo/golog"
-	"github.com/zoumo/golog/consolog"
+	"github.com/zoumo/golib/log"
+	"github.com/zoumo/golib/log/consolog"
 
 	cliflag "github.com/zoumo/make-rules/pkg/cli/flag"
 	"github.com/zoumo/make-rules/pkg/config"
@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	golog.SetLogger(consolog.New())
+	log.SetLogger(consolog.New())
 }
 
 func NewRootCommand() *cobra.Command {

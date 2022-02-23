@@ -288,10 +288,8 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/zoumo/golib v0.0.0-20220222092837-7e3a4fe9a2f0 h1:zXTd5674WTi9RT6TfSLw4mJnkUNJqUkpd5gczxALlbw=
-github.com/zoumo/golib v0.0.0-20220222092837-7e3a4fe9a2f0/go.mod h1:1qpdMvhJVTo4FZNZ3IsVwzKfkgTk5QtTSdQyOgdGITQ=
-github.com/zoumo/golog v0.4.1 h1:oQosslWnKvnFgB0W+mY1TVNFAXscvHTb0RLQpcmpFZQ=
-github.com/zoumo/golog v0.4.1/go.mod h1:EtysVYfwwkTKjZy7K/yVT9tpOR1r5kjl3mGVgzrXFfY=
+github.com/zoumo/golib v0.0.0-20220223062151-794bff922af0 h1:EUWnS8fIcaQjhXEtMc4KzqELnAp2LYuayyfddxLQrJs=
+github.com/zoumo/golib v0.0.0-20220223062151-794bff922af0/go.mod h1:XxcWdSji0jtYStJdfqBMKVRn2/eaPGiQi0zN4c7KvzM=
 github.com/zoumo/goset v0.2.0 h1:mflvfwZfKiayxR8/7fFBhvWHzhXU+aVP2nOzTEKVTfU=
 github.com/zoumo/goset v0.2.0/go.mod h1:9N4gYaiVAbD/SytgmvFUlacbp1lSItmws1xNdzVslH4=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=

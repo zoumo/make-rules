@@ -3,7 +3,7 @@ package app
 import (
 	"github.com/spf13/cobra"
 	"github.com/zoumo/golib/cli/plugin"
-	"github.com/zoumo/golog"
+	"github.com/zoumo/golib/log"
 
 	"github.com/zoumo/make-rules/pkg/cli/cmd/golang"
 	"github.com/zoumo/make-rules/pkg/cli/injection"
@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	gologger = golog.Log.WithName("go")
+	gologger = log.Log.WithName("go")
 )
 
 func newGoCommand(cfg *config.Config) *cobra.Command {
