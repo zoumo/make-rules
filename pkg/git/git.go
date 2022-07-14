@@ -45,7 +45,7 @@ func (r *Repository) getTags() error {
 
 func (r *Repository) RemoteURL(name string) (string, error) {
 	remote, err := r.Remote(name)
-	if err != nil && err != git.ErrRemoteNotFound {
+	if err != nil {
 		return "", err
 	}
 	if len(remote.Config().URLs) > 0 {
