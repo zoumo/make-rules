@@ -62,7 +62,7 @@ func (c *dockerBuildSubcommand) PreRun(args []string) error {
 func (c *dockerBuildSubcommand) getDockerTag() string {
 	version := "v0.0.0"
 	if c.version != "" {
-		version = c.version
+		return c.version
 	}
 	if c.git == nil {
 		// this is not a git repo
