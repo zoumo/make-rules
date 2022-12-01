@@ -290,7 +290,7 @@ func (c *gobuildSubcommand) Run(args []string) error {
 }
 
 func (c gobuildSubcommand) gobuildArgs(output, target string) []string {
-	args := []string{"build", "-i"}
+	args := []string{"build"}
 	if len(c.Config.Go.Build.Flags) > 0 {
 		args = append(args, c.Config.Go.Build.Flags...)
 	}
