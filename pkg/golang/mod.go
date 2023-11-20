@@ -76,7 +76,7 @@ func (g *GomodHelper) Require(path, version string, skipDeps bool) error {
 		if err != nil {
 			return err
 		}
-		if err := g.replaceK8SStaging(gomod, version); err != nil {
+		if err := g.replaceK8Smodules(gomod, version); err != nil {
 			return err
 		}
 	}
@@ -140,13 +140,26 @@ func (g *GomodHelper) pinDependence(oldPath, newPath, version string) error {
 	return nil
 }
 
-func (g *GomodHelper) replaceK8SStaging(gomod *GoMod, version string) error {
+func (g *GomodHelper) replaceK8Smodules(gomod *GoMod, version string) error {
 	version = strings.TrimLeft(version, "v")
 
 	staging := []string{}
 	for _, r := range gomod.Replace {
 		if strings.HasPrefix(r.New.Path, "./staging/src/k8s.io/") {
+			// staging
 			staging = append(staging, r.Old.Path)
+			continue
+		}
+
+		if strings.HasPrefix(r.New.Path, "k8s.io/") {
+			// other k8s deps
+			g.logger.Info(fmt.Sprintf("replace k8s dependency %s=%s@%s", r.New.Path, r.New.Path, r.New.Version))
+			if err := g.EditRequire(r.New.Path, r.New.Version); err != nil {
+				return err
+			}
+			if err := g.EditReplace(r.New.Path, r.New.Path, r.New.Version); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -165,6 +178,7 @@ func (g *GomodHelper) replaceK8SStaging(gomod *GoMod, version string) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
