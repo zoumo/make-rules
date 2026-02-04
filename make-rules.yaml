@@ -8,10 +8,6 @@ go:
     flags:
       - "-v"
     globalHooksDir: hack/hooks
-  mod:
-    require: 
-    - path: github.com/zoumo/golog
-      version: v0.4.1
   format:
     local: github.com/zoumo/make-rules
     exclude:

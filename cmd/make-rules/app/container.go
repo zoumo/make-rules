@@ -2,17 +2,13 @@ package app
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/zoumo/golib/cli/plugin"
 	"github.com/zoumo/golib/log"
 
 	"github.com/zoumo/make-rules/pkg/cli/cmd/container"
-	"github.com/zoumo/make-rules/pkg/cli/injection"
 	"github.com/zoumo/make-rules/pkg/config"
 )
 
-var (
-	containerlogger = log.Log.WithName("container")
-)
+var containerlogger = log.Log.WithName("container")
 
 func newContainerCommand(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
@@ -25,11 +21,6 @@ func newContainerCommand(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
-		container.NewContainerBuildCommand(),
-		injection.InjectLogger(containerlogger.WithName("build")),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	))
+	cmd.AddCommand(container.NewContainerBuildCommand())
 	return cmd
 }

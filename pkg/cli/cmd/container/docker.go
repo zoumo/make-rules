@@ -4,17 +4,23 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/zoumo/golib/cli/plugin"
+	"github.com/zoumo/golib/cli"
 
 	"github.com/zoumo/make-rules/pkg/cli/cmd/utils"
-	"github.com/zoumo/make-rules/pkg/cli/injection"
+	"github.com/zoumo/make-rules/pkg/cli/common"
 	"github.com/zoumo/make-rules/pkg/git"
 	"github.com/zoumo/make-rules/pkg/runner"
 )
 
-type dockerBuildSubcommand struct {
-	*injection.InjectionMixin
+var (
+	_ cli.Command        = &DockerBuildCommand{}
+	_ cli.ComplexOptions = &DockerBuildCommand{}
+)
+
+type DockerBuildCommand struct {
+	*common.CommonOptions
 
 	dockerRunner *runner.Runner
 
@@ -24,25 +30,32 @@ type dockerBuildSubcommand struct {
 	version    string
 }
 
-func NewContainerBuildCommand() plugin.Subcommand {
-	return &dockerBuildSubcommand{
-		InjectionMixin: injection.NewInjectionMixin(),
-		dockerRunner:   runner.NewRunner("docker"),
-	}
+func NewContainerBuildCommand() *cobra.Command {
+	return cli.NewCobraCommand(&DockerBuildCommand{
+		CommonOptions: common.NewCommonOptions(),
+		dockerRunner:  runner.NewRunner("docker"),
+	})
 }
 
-func (c *dockerBuildSubcommand) Name() string {
+func (c *DockerBuildCommand) Name() string {
 	return "build"
 }
 
-func (c *dockerBuildSubcommand) BindFlags(fs *pflag.FlagSet) {
+func (c *DockerBuildCommand) BindFlags(fs *pflag.FlagSet) {
+	// Call embedded CommonOptions.BindFlags first
+	c.CommonOptions.BindFlags(fs)
+
 	fs.StringSliceVar(&c.Config.Container.Registries, "registries", c.Config.Container.Registries, "docker image registries")
 	fs.StringVar(&c.version, "version", c.version, "go build target version")
 }
 
-func (c *dockerBuildSubcommand) PreRun(args []string) error {
+func (c *DockerBuildCommand) Complete(cmd *cobra.Command, args []string) error {
+	// Call embedded CommonOptions.Complete (sets Logger, loads Config)
+	if err := c.CommonOptions.Complete(cmd, args); err != nil {
+		return err
+	}
+
 	// no targets, walk cmd/ dir to find targets
-	c.Config.SetDefaults()
 	allTargets, err := utils.FindTargetsFrom(c.Workspace, "build", "Dockerfile")
 	if err != nil {
 		return err
@@ -59,7 +72,15 @@ func (c *dockerBuildSubcommand) PreRun(args []string) error {
 	return nil
 }
 
-func (c *dockerBuildSubcommand) getDockerTag() string {
+func (c *DockerBuildCommand) Validate() error {
+	// Call embedded CommonOptions.Validate first
+	if err := c.CommonOptions.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *DockerBuildCommand) getDockerTag() string {
 	version := "v0.0.0"
 	if c.version != "" {
 		return c.version
@@ -91,7 +112,7 @@ func (c *dockerBuildSubcommand) getDockerTag() string {
 	return version
 }
 
-func (c *dockerBuildSubcommand) Run(args []string) error {
+func (c *DockerBuildCommand) Run(cmd *cobra.Command, args []string) error {
 	c.Logger.Info("=================================================")
 	c.Logger.Info("Docker build", "targets", c.targets)
 	for _, target := range c.targets {

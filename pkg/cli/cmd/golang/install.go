@@ -7,24 +7,34 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/zoumo/golib/cli/plugin"
+	"github.com/spf13/cobra"
+	"github.com/zoumo/golib/cli"
+
+	"github.com/zoumo/make-rules/pkg/cli/common"
+	"github.com/zoumo/make-rules/pkg/runner"
 )
 
-type goInstallSubcommand struct {
-	*gobuildSubcommand
+var _ cli.Command = &GoinstallCommand{}
+
+type GoinstallCommand struct {
+	*GobuildCommand
 }
 
-func NewGoInstallCommand() plugin.Subcommand {
-	return &goInstallSubcommand{
-		gobuildSubcommand: NewGobuildCommand().(*gobuildSubcommand),
-	}
+func NewGoInstallCommand() *cobra.Command {
+	return cli.NewCobraCommand(&GoinstallCommand{
+		GobuildCommand: &GobuildCommand{
+			CommonOptions: common.NewCommonOptions(),
+			goCmd:         runner.NewRunner("go"),
+			bashCmd:       runner.NewRunner("bash"),
+		},
+	})
 }
 
-func (c *goInstallSubcommand) Name() string {
+func (c *GoinstallCommand) Name() string {
 	return "install"
 }
 
-func (c *goInstallSubcommand) PostRun(args []string) error {
+func (c *GoinstallCommand) Run(cmd *cobra.Command, args []string) error {
 	gobin := c.getGobinPath()
 	if len(gobin) == 0 {
 		return errors.New("failed to find GOBIN path, please set GOBIN or GOPATH in env")
@@ -67,7 +77,7 @@ func (c *goInstallSubcommand) PostRun(args []string) error {
 
 // find gobin from env GOBIN or GOPATH/bin
 // if GOBIN and GOPATH is not set, return ""
-func (c *goInstallSubcommand) getGobinPath() string {
+func (c *GoinstallCommand) getGobinPath() string {
 	gobin := os.Getenv("GOBIN")
 	if len(gobin) != 0 {
 		return gobin

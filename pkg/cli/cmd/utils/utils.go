@@ -11,14 +11,14 @@ import (
 // and then filter target if it does not contains {mustContainFile}
 //
 // [example]:
-//  workdir/
-//    |- cmd
-//        |- a - main.go
-//        |- b - main.go
-//        |- c - xxx.go
+//
+//	workdir/
+//	  |- cmd
+//	      |- a - main.go
+//	      |- b - main.go
+//	      |- c - xxx.go
 //
 // call findTargetsFrom(workdir, "cmd", "main.go") -> result: ["cmd/a", "cmd/b"]
-//
 func FindTargetsFrom(workdir, subdir string, mustContainFile string) (targets []string, err error) {
 	root := workdir + "/" + subdir + "/"
 	err = filepath.Walk(root, func(fpath string, info os.FileInfo, ierr error) error {

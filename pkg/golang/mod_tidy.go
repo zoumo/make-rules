@@ -16,8 +16,9 @@ func (g *GomodHelper) ModTidy() error {
 
 // PruneAndTidy
 // 1. ensures all existing 'require' directives have an associated 'replace' directive pinning a version
-//    - adds explicit 'require' directives for all transitive dependencies
-//    - adds explicit 'replace' directives for all require directives
+//   - adds explicit 'require' directives for all transitive dependencies
+//   - adds explicit 'replace' directives for all require directives
+//
 // 2. prune replace directives that pin to the naturally selected version.
 // 3. format and tidy go.mod
 func (g *GomodHelper) PruneAndTidy() error {

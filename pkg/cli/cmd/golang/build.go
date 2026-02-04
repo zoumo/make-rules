@@ -7,31 +7,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/zoumo/golib/cli/plugin"
+	"github.com/zoumo/golib/cli"
 
 	"github.com/zoumo/make-rules/pkg/cli/cmd/utils"
-	"github.com/zoumo/make-rules/pkg/cli/injection"
+	"github.com/zoumo/make-rules/pkg/cli/common"
 	"github.com/zoumo/make-rules/pkg/git"
 	"github.com/zoumo/make-rules/pkg/runner"
 	"github.com/zoumo/make-rules/version"
 )
 
-var (
-	RequiredGoEnvKeys = []string{
-		"GO111MODULE",
-		"GOFLAGS",
-		"GOINSECURE",
-		"GOMOD",
-		"GOMODCACHE",
-		"GONOPROXY",
-		"GONOSUMDB",
-		"GOPATH",
-		"GOPROXY",
-		"GOROOT",
-		"GOSUMDB",
-	}
-)
+var RequiredGoEnvKeys = []string{
+	"GO111MODULE",
+	"GOFLAGS",
+	"GOINSECURE",
+	"GOMOD",
+	"GOMODCACHE",
+	"GONOPROXY",
+	"GONOSUMDB",
+	"GOPATH",
+	"GOPROXY",
+	"GOROOT",
+	"GOSUMDB",
+}
 
 type platform struct {
 	GOOS   string
@@ -50,8 +49,13 @@ func readPlatform(val string) *platform {
 	return &platform{GOOS: ps[0], GOARCH: ps[1]}
 }
 
-type gobuildSubcommand struct {
-	*injection.InjectionMixin
+var (
+	_ cli.Command        = &GobuildCommand{}
+	_ cli.ComplexOptions = &GobuildCommand{}
+)
+
+type GobuildCommand struct {
+	*common.CommonOptions
 
 	goCmd   *runner.Runner
 	bashCmd *runner.Runner
@@ -65,28 +69,32 @@ type gobuildSubcommand struct {
 	version string
 }
 
-func NewGobuildCommand() plugin.Subcommand {
-	return &gobuildSubcommand{
-		InjectionMixin: injection.NewInjectionMixin(),
-		goCmd:          runner.NewRunner("go"),
-		bashCmd:        runner.NewRunner("bash"),
-	}
+func NewGobuildCommand() *cobra.Command {
+	return cli.NewCobraCommand(&GobuildCommand{
+		CommonOptions: common.NewCommonOptions(),
+		goCmd:         runner.NewRunner("go"),
+		bashCmd:       runner.NewRunner("bash"),
+	})
 }
 
-func (c *gobuildSubcommand) Name() string {
+func (c *GobuildCommand) Name() string {
 	return "build"
 }
 
-func (c *gobuildSubcommand) BindFlags(fs *pflag.FlagSet) {
-	// convert platforms
-	c.Config.SetDefaults()
+func (c *GobuildCommand) BindFlags(fs *pflag.FlagSet) {
+	// Call embedded CommonOptions.BindFlags first
+	c.CommonOptions.BindFlags(fs)
 
 	fs.StringSliceVar(&c.Config.Go.Build.Platforms, "platforms", c.Config.Go.Build.Platforms, "go build target platforms")
-	fs.StringVar(&c.Config.Go.Build.GlobalHooksDir, "global-hooks-dir", c.Config.Go.Build.GlobalHooksDir, "the global pre-build and post-build hooks dir")
 	fs.StringVar(&c.version, "version", c.version, "go build target version")
 }
 
-func (c *gobuildSubcommand) init(args []string) error {
+func (c *GobuildCommand) Complete(cmd *cobra.Command, args []string) error {
+	// Call embedded CommonOptions.Complete (sets Logger, loads Config)
+	if err := c.CommonOptions.Complete(cmd, args); err != nil {
+		return err
+	}
+
 	for _, p := range c.Config.Go.Build.Platforms {
 		if pf := readPlatform(p); pf != nil {
 			c.platforms = append(c.platforms, *pf)
@@ -124,7 +132,15 @@ func (c *gobuildSubcommand) init(args []string) error {
 	return nil
 }
 
-func (c *gobuildSubcommand) getVersionInfo() version.Info {
+func (c *GobuildCommand) Validate() error {
+	// Call embedded CommonOptions.Validate first
+	if err := c.CommonOptions.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *GobuildCommand) getVersionInfo() version.Info {
 	info := version.Info{
 		GitVersion:   "v0.0.0",
 		GitCommit:    "unknown",
@@ -180,7 +196,7 @@ func (c *gobuildSubcommand) getVersionInfo() version.Info {
 	return info
 }
 
-func (c *gobuildSubcommand) ldflags() string {
+func (c *GobuildCommand) ldflags() string {
 	info := c.getVersionInfo()
 
 	flags := []string{
@@ -203,7 +219,7 @@ const (
 	PostBuildHook = "post-build"
 )
 
-func (c *gobuildSubcommand) runHook(dir string, phase HookPhase) error {
+func (c *GobuildCommand) runHook(dir string, phase HookPhase) error {
 	// run global hooks
 	hook := path.Join(dir, string(phase))
 	c.Logger.V(2).Info("detecting hook", "path", hook)
@@ -228,26 +244,12 @@ func (c *gobuildSubcommand) runHook(dir string, phase HookPhase) error {
 	return nil
 }
 
-func (c *gobuildSubcommand) PreRun(args []string) error {
-	if err := c.init(args); err != nil {
-		return err
-	}
+func (c *GobuildCommand) Run(cmd *cobra.Command, args []string) error {
 	// run global hooks
 	if err := c.runHook(c.Config.Go.Build.GlobalHooksDir, PreBuildHook); err != nil {
 		return err
 	}
-	return nil
-}
 
-func (c *gobuildSubcommand) PostRun(args []string) error {
-	// run global hooks
-	if err := c.runHook(c.Config.Go.Build.GlobalHooksDir, PostBuildHook); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *gobuildSubcommand) Run(args []string) error {
 	for _, platform := range c.platforms {
 		c.Logger.Info("Go cross compiling", "platform", platform.String())
 		cmd := c.goCmd.WithEnvs(
@@ -267,7 +269,7 @@ func (c *gobuildSubcommand) Run(args []string) error {
 			// go build
 			args := c.gobuildArgs(output, target)
 			if c.Logger.V(2).Enabled() {
-				kvlist := []interface{}{}
+				kvlist := []any{}
 				for k, v := range cmd.FilterEnv(RequiredGoEnvKeys) {
 					kvlist = append(kvlist, k, v)
 				}
@@ -286,10 +288,14 @@ func (c *gobuildSubcommand) Run(args []string) error {
 			}
 		}
 	}
+	// run global hooks
+	if err := c.runHook(c.Config.Go.Build.GlobalHooksDir, PostBuildHook); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (c gobuildSubcommand) gobuildArgs(output, target string) []string {
+func (c *GobuildCommand) gobuildArgs(output, target string) []string {
 	args := []string{"build"}
 	if len(c.Config.Go.Build.Flags) > 0 {
 		args = append(args, c.Config.Go.Build.Flags...)
@@ -302,7 +308,7 @@ func (c gobuildSubcommand) gobuildArgs(output, target string) []string {
 	return args
 }
 
-func (c *gobuildSubcommand) outputFile(platform platform, target string) string {
+func (c *GobuildCommand) outputFile(platform platform, target string) string {
 	bin := path.Base(target)
 	if platform.GOOS == "windown" {
 		bin += ".exe"

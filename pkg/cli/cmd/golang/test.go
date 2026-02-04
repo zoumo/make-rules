@@ -5,10 +5,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/zoumo/golib/cli/plugin"
+	"github.com/zoumo/golib/cli"
 
-	"github.com/zoumo/make-rules/pkg/cli/injection"
+	"github.com/zoumo/make-rules/pkg/cli/common"
 	"github.com/zoumo/make-rules/pkg/runner"
 )
 
@@ -23,30 +24,37 @@ var (
 	}
 )
 
-type goUnittestSubcommand struct {
-	*injection.InjectionMixin
+var _ cli.Command = &GounittestCommand{}
+var _ cli.ComplexOptions = &GounittestCommand{}
+
+type GounittestCommand struct {
+	*common.CommonOptions
 
 	goCmd *runner.Runner
 
 	allTests []string
 }
 
-func NewGoUnittestCommand() plugin.Subcommand {
-	return &goUnittestSubcommand{
-		InjectionMixin: injection.NewInjectionMixin(),
-		goCmd:          runner.NewRunner("go"),
-	}
+func NewGoUnittestCommand() *cobra.Command {
+	return cli.NewCobraCommand(&GounittestCommand{
+		CommonOptions: common.NewCommonOptions(),
+		goCmd:         runner.NewRunner("go"),
+	})
 }
 
-func (c *goUnittestSubcommand) Name() string {
+func (c *GounittestCommand) Name() string {
 	return "unittest"
 }
 
-func (c *goUnittestSubcommand) BindFlags(fs *pflag.FlagSet) {
-
+func (c *GounittestCommand) BindFlags(fs *pflag.FlagSet) {
+	c.CommonOptions.BindFlags(fs)
 }
 
-func (c *goUnittestSubcommand) PreRun(args []string) error {
+func (c *GounittestCommand) Complete(cmd *cobra.Command, args []string) error {
+	if err := c.CommonOptions.Complete(cmd, args); err != nil {
+		return err
+	}
+
 	out, err := c.goCmd.RunOutput("list", "-test", "./...")
 	if err != nil {
 		c.Logger.Error(err, "failed to go list ./...", string(out))
@@ -97,7 +105,11 @@ func (c *goUnittestSubcommand) PreRun(args []string) error {
 	return nil
 }
 
-func (c *goUnittestSubcommand) Run(args []string) error {
+func (c *GounittestCommand) Validate() error {
+	return c.CommonOptions.Validate()
+}
+
+func (c *GounittestCommand) Run(cmd *cobra.Command, args []string) error {
 	for _, test := range c.allTests {
 		test = strings.TrimSuffix(test, ".test")
 		out, err := c.goCmd.RunCombinedOutput("test", test)

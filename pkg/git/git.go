@@ -139,7 +139,8 @@ type DescribeObject struct {
 
 // This translates the "git describe" to an actual semver.org
 // compatible semantic version that looks something like this:
-//   v1.1.0-alpha.0.6+84c76d1142ea4d
+//
+//	v1.1.0-alpha.0.6+84c76d1142ea4d
 func (desc *DescribeObject) SemanticVersion() string {
 	version := "v0.0.0"
 	hash := desc.Hash.String()[0:ShortHashLen]

@@ -10,12 +10,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-logr/logr"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/zoumo/golib/cli/plugin"
+	"github.com/zoumo/golib/cli"
+	"github.com/zoumo/golib/log"
 	"github.com/zoumo/goset"
 
-	"github.com/zoumo/make-rules/pkg/cli/injection"
+	"github.com/zoumo/make-rules/pkg/cli/common"
 	"github.com/zoumo/make-rules/pkg/runner"
 )
 
@@ -38,10 +39,10 @@ type exclude struct {
 	dirs        goset.Set
 	fileRegexps []*regexp.Regexp
 	dirRegexps  []*regexp.Regexp
-	logger      logr.Logger
+	logger      log.Logger
 }
 
-func defaultExclued(logger logr.Logger) *exclude {
+func defaultExclued(logger log.Logger) *exclude {
 	e := &exclude{
 		files:       goset.NewSet(),
 		dirs:        goset.NewSet(),
@@ -118,31 +119,37 @@ func (e *exclude) AddFileRegexp(fileE string) {
 	e.fileRegexps = append(e.fileRegexps, reg)
 }
 
-type formatSubcommand struct {
-	*injection.InjectionMixin
+var _ cli.Command = &FormatCommand{}
+var _ cli.ComplexOptions = &FormatCommand{}
+
+type FormatCommand struct {
+	*common.CommonOptions
 	goCmd        *runner.Runner
 	goimportsCmd *runner.Runner
 
 	module string
 }
 
-func NewFormatSubcommand() plugin.Subcommand {
-	return &formatSubcommand{
-		InjectionMixin: injection.NewInjectionMixin(),
-		goCmd:          runner.NewRunner("go"),
-		goimportsCmd:   runner.NewRunner("goimports"),
-	}
+func NewFormatSubcommand() *cobra.Command {
+	return cli.NewCobraCommand(&FormatCommand{
+		CommonOptions: common.NewCommonOptions(),
+		goCmd:         runner.NewRunner("go"),
+		goimportsCmd:  runner.NewRunner("goimports"),
+	})
 }
 
-func (c *formatSubcommand) Name() string {
+func (c *FormatCommand) Name() string {
 	return "format"
 }
 
-func (c *formatSubcommand) BindFlags(fs *pflag.FlagSet) {
+func (c *FormatCommand) BindFlags(fs *pflag.FlagSet) {
+	c.CommonOptions.BindFlags(fs)
 }
 
-func (c *formatSubcommand) PreRun(args []string) error {
-	c.Config.SetDefaults()
+func (c *FormatCommand) Complete(cmd *cobra.Command, args []string) error {
+	if err := c.CommonOptions.Complete(cmd, args); err != nil {
+		return err
+	}
 	// find module
 	out, err := c.goCmd.RunOutput("list", "-m")
 	if err != nil {
@@ -156,7 +163,11 @@ func (c *formatSubcommand) PreRun(args []string) error {
 	return nil
 }
 
-func (c *formatSubcommand) Run(args []string) error {
+func (c *FormatCommand) Validate() error {
+	return c.CommonOptions.Validate()
+}
+
+func (c *FormatCommand) Run(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		// format used defined targets
 		for _, f := range args {
@@ -204,7 +215,7 @@ func (c *formatSubcommand) Run(args []string) error {
 	})
 }
 
-func (c *formatSubcommand) format(finename string) error {
+func (c *FormatCommand) format(finename string) error {
 	// format
 	// delete empty line between import ( and )
 	if err := deleteEmptyLineWithinImports(finename); err != nil {

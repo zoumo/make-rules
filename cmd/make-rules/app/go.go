@@ -2,11 +2,9 @@ package app
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/zoumo/golib/cli/plugin"
 	"github.com/zoumo/golib/log"
 
 	"github.com/zoumo/make-rules/pkg/cli/cmd/golang"
-	"github.com/zoumo/make-rules/pkg/cli/injection"
 	"github.com/zoumo/make-rules/pkg/config"
 	goutil "github.com/zoumo/make-rules/pkg/golang"
 )
@@ -28,80 +26,24 @@ func newGoCommand(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.AddCommand(newGoBuildCommand(cfg))
-	cmd.AddCommand(newGoInstallCommand(cfg))
-	cmd.AddCommand(newGoModCommand(cfg))
-	cmd.AddCommand(newGoFormatCommand(cfg))
-	cmd.AddCommand(newGoUnittestCommand(cfg))
+	cmd.AddCommand(golang.NewGobuildCommand())
+	cmd.AddCommand(golang.NewGoInstallCommand())
+	cmd.AddCommand(newGoModCommand())
+	cmd.AddCommand(golang.NewFormatSubcommand())
+	cmd.AddCommand(golang.NewGoUnittestCommand())
 
 	return cmd
 }
 
-func newGoBuildCommand(cfg *config.Config) *cobra.Command {
-	return plugin.NewCobraSubcommandOrDie(
-		golang.NewGobuildCommand(),
-		injection.InjectLogger(gologger.WithName("build")),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	)
-}
-
-func newGoInstallCommand(cfg *config.Config) *cobra.Command {
-	return plugin.NewCobraSubcommandOrDie(
-		golang.NewGoInstallCommand(),
-		injection.InjectLogger(gologger.WithName("build")),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	)
-}
-
-func newGoFormatCommand(cfg *config.Config) *cobra.Command {
-	return plugin.NewCobraSubcommandOrDie(
-		golang.NewFormatSubcommand(),
-		injection.InjectLogger(gologger.WithName("format")),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	)
-}
-
-func newGoModCommand(cfg *config.Config) *cobra.Command {
+func newGoModCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "mod",
+		Short:        "Manage go.mod",
 		SilenceUsage: true,
 	}
-	logger := gologger.WithName("mod")
-	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
-		golang.NewModTidyCommand(),
-		injection.InjectLogger(logger),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	))
-	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
-		golang.NewModRequireCommand(),
-		injection.InjectLogger(logger),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	))
-	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
-		golang.NewModReplaceCommand(),
-		injection.InjectLogger(logger),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	))
-	cmd.AddCommand(plugin.NewCobraSubcommandOrDie(
-		golang.NewModUpdateCommand(),
-		injection.InjectLogger(logger),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	))
+	cmd.AddCommand(golang.NewModTidyCommand())
+	cmd.AddCommand(golang.NewModRequireCommand())
+	cmd.AddCommand(golang.NewModReplaceCommand())
+	cmd.AddCommand(golang.NewModUpdateCommand())
 	return cmd
-}
-
-func newGoUnittestCommand(cfg *config.Config) *cobra.Command {
-	return plugin.NewCobraSubcommandOrDie(
-		golang.NewGoUnittestCommand(),
-		injection.InjectLogger(gologger.WithName("unittest")),
-		injection.InjectWorkspace(),
-		injection.InjectConfig(cfg),
-	)
 }

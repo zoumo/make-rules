@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/go-logr/logr"
+	"github.com/zoumo/golib/log"
 	"github.com/zoumo/goset"
 
 	"github.com/zoumo/make-rules/pkg/runner"
@@ -27,13 +27,13 @@ const (
 type GomodHelper struct {
 	goRunner     *runner.Runner
 	modfile      string
-	logger       logr.Logger
+	logger       log.Logger
 	downloadTemp string
 	pinned       goset.Set
 	goVersion    *semver.Version
 }
 
-func NewGomodHelper(modfile string, logger logr.Logger) *GomodHelper {
+func NewGomodHelper(modfile string, logger log.Logger) *GomodHelper {
 	version, err := getGoVersion()
 	if err != nil {
 		panic(fmt.Sprintf("failed to get go version: %v", err))
