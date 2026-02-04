@@ -6,7 +6,6 @@ import (
 	"github.com/zoumo/golib/log/consolog"
 
 	cliflag "github.com/zoumo/make-rules/pkg/cli/flag"
-	"github.com/zoumo/make-rules/pkg/config"
 	"github.com/zoumo/make-rules/version"
 )
 
@@ -24,14 +23,9 @@ func NewRootCommand() *cobra.Command {
 	cmd.SetGlobalNormalizationFunc(cliflag.WordSepNormalizeFunc)
 	cliflag.AddGlobalFlags(cmd.PersistentFlags())
 
-	cfg, err := config.Load()
-	if err != nil {
-		cfg = &config.Config{}
-	}
-
 	// add subcommand
-	cmd.AddCommand(newGoCommand(cfg))
-	cmd.AddCommand(newContainerCommand(cfg))
+	cmd.AddCommand(newGoCommand())
+	cmd.AddCommand(newContainerCommand())
 	cmd.AddCommand(version.NewCommand())
 
 	return cmd

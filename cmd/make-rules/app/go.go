@@ -13,12 +13,16 @@ var (
 	gologger = log.Log.WithName("go")
 )
 
-func newGoCommand(cfg *config.Config) *cobra.Command {
+func newGoCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "go",
 		Short:        "Used to build go module and operate go.mod",
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load()
+			if err != nil {
+				cfg = &config.Config{}
+			}
 			gologger.V(1).Info("make-rules config", "config", cfg)
 			if err := goutil.VerifyGoVersion(cfg.Go.MinimumVersion); err != nil {
 				return err
